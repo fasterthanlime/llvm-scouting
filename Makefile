@@ -1,3 +1,6 @@
 all:
-	llvm-as hiworld.S
-	llvm-ld hiworld.S.bc
+	llvm-as hiworld.ll
+	llvm-ld hiworld.bc -o hiworld
+
+clean:
+	rm *.bc hiworld

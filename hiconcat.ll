@@ -62,29 +62,33 @@ define %tool.String * @tool.String.new(i32 %length, i8 * %data) {
 }
 
 define %tool.String * @tool.String.concat(%tool.String * %s1, %tool.String * %s2) {
-  %len1.addr = getelementptr %tool.String * %s1, i32 0, i32 1
-  %len1 = load i32* %len1.addr
-  %mem1.addr = getelementptr %tool.String * %s1, i32 0, i32 2
-  %mem1 = load i8** %mem1.addr
+  ; compute length of result string
+  %1 = getelementptr %tool.String * %s1, i64 0, i32 1
+  %2 = load i32* %1
+  %3 = getelementptr %tool.String * %s2, i64 0, i32 1
+  %4 = load i32* %3
+  %5 = add i32 %2, %4
+  %6 = add i32 %5, 1
+  %7 = sext i32 %6 to i64
 
-  %len2.addr = getelementptr %tool.String * %s2, i32 0, i32 1
-  %len2 = load i32* %len2.addr
-  %mem2.addr = getelementptr %tool.String * %s2, i32 0, i32 2
-  %mem2 = load i8** %mem2.addr
+  ; allocate memory for result string
+  %8 = call i8* @malloc(i32 %6) nounwind
 
-  %len3 = add i32 %len1, %len2
-  %len3alloc = add i32 %len3, 1
-  %mem3 = call i8* @malloc(i32 %len3alloc)
+  ; copy first string into result string
+  %9 = getelementptr %tool.String * %s1, i64 0, i32 2
+  %10 = load i8** %9
+  %11 = sext i32 %2 to i64
+  %12 = call i8* @strncpy(i8* %8, i8* %10, i64 %11)
 
-  %len1.64 = sext i32 %len1 to i64
-  %len2.64 = sext i32 %len2 to i64
-  %len3.64 = sext i32 %len3 to i64
+  ; append second string to result string
+  %13 = getelementptr %tool.String * %s2, i64 0, i32 2
+  %14 = load i8** %13
+  %15 = sext i32 %4 to i64
+  %16 = call i8* @strncat(i8* %8, i8* %14, i64 %15)
 
-  call i8* @strncpy (i8 * %mem3, i8 * %mem1, i64 %len1.64)
-  call i8* @strncat (i8 * %mem3, i8 * %mem1, i64 %len3.64)
-  
-  %s3 = call %tool.String * @tool.String.new(i32 %len3, i8 * %mem3)
-  ret %tool.String * %s3
+  ; create string object and return it
+  %17 = call %tool.String * @tool.String.new(i32 %5, i8 * %8)
+  ret %tool.String * %17
 }
 
 define void @println.String(%tool.String * %str) {

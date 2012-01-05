@@ -7,7 +7,8 @@
 
 declare i32 @puts(i8 *)
 declare i8 * @malloc(i32)
-declare i8 * @memcpy(i8 *, i8 *, i64)
+declare i8 * @strncpy(i8 *, i8 *, i64)
+declare i8 * @strncat(i8 *, i8 *, i64)
 
 define void @println(i8 * %str) {
   call i32 @puts(i8 * %str)
@@ -74,23 +75,14 @@ define %tool.String * @tool.String.concat(%tool.String * %s1, %tool.String * %s2
   %len3 = add i32 %len1, %len2
   %len3alloc = add i32 %len3, 1
   %mem3 = call i8* @malloc(i32 %len3alloc)
-  
-  %mem3start = ptrtoint i8 * %mem3 to i64
 
   %len1.64 = sext i32 %len1 to i64
   %len2.64 = sext i32 %len2 to i64
   %len3.64 = sext i32 %len3 to i64
 
-  %mem3mid.64 = add i64 %mem3start, %len1.64
-  %mem3mid = inttoptr i64 %mem3mid.64 to i8 *
-
-  %mem3end.64 = add i64 %mem3start, %len3.64
-  %mem3end = inttoptr i64 %mem3end.64 to i8 *
-
-  call i8 * @memcpy(i8 * %mem3,    i8* %mem1, i64 %len1.64)
-  call i8 * @memcpy(i8 * %mem3mid, i8* %mem2, i64 %len2.64)
-  store i8 0, i8 * %mem3end ; null-terminated string
-
+  call i8* @strncpy (i8 * %mem3, i8 * %mem1, i64 %len1.64)
+  call i8* @strncat (i8 * %mem3, i8 * %mem1, i64 %len3.64)
+  
   %s3 = call %tool.String * @tool.String.new(i32 %len3, i8 * %mem3)
   ret %tool.String * %s3
 }

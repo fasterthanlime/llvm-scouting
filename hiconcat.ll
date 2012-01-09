@@ -83,18 +83,16 @@ define %tool.String * @tool.String.concat(%tool.String * %s1, %tool.String * %s2
   %10 = load i8** %9
   %11 = sext i32 %2 to i64
   %12 = call i8* @strncpy(i8* %8, i8* %10, i64 %11)
-  %13 = call i32 @puts(i8 * %10)
 
   ; append second string to result string
-  %14 = getelementptr %tool.String * %s2, i64 0, i32 2
-  %15 = load i8** %14
-  %16 = sext i32 %4 to i64
-  %17 = call i8* @strncat(i8* %8, i8* %15, i64 %16)
-  %18 = call i32 @puts(i8 * %15)
+  %13 = getelementptr %tool.String * %s2, i64 0, i32 2
+  %14 = load i8** %13
+  %15 = sext i32 %4 to i64
+  %16 = call i8* @strncat(i8* %8, i8* %14, i64 %15)
 
   ; create string object and return it
-  %19 = call %tool.String * @tool.String.new(i32 %5, i8 * %8)
-  ret %tool.String * %19
+  %17 = call %tool.String * @tool.String.new(i32 %5, i8 * %8)
+  ret %tool.String * %17
 }
 
 define void @println.String(%tool.String * %str) {

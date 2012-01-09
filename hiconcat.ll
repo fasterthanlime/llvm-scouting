@@ -3,18 +3,22 @@
 @.LC0 = internal constant [7 x i8] c"hello \00"
 @.LC1 = internal constant [6 x i8] c"world\00"
 
+@.LCIntToString = internal constant [3 x i8] c"%d\00"
+
 ; standard library function
 
 declare i32 @puts(i8 *)
-declare i8 * @malloc(i32)
+declare i8 * @malloc(i64)
 declare i8 * @strncpy(i8 *, i8 *, i64)
 declare i8 * @strncat(i8 *, i8 *, i64)
+declare i32 @snprintf(i8 *, i32, i8*, ...)
 
 define void @println(i8 * %str) {
   call i32 @puts(i8 * %str)
   ret void
 }
 
+%tool.Int = type i32
 %tool.CString = type i8 *
 
 %tool.Class = type {
@@ -28,7 +32,8 @@ define void @println(i8 * %str) {
 ; Allocate an object
 
 define %tool.Object * @tool.Object.allocate(i32 %size, %tool.Class * %class) {
-  %mem = call i8 * @malloc(i32 %size)
+  %size.64 = sext i32 %size to i64
+  %mem = call i8 * @malloc(i64 %size.64)
   %obj = bitcast i8 * %mem to %tool.Object *
   %obj.class = getelementptr %tool.Object * %obj, i32 0, i32 0
   store %tool.Class * %class, %tool.Class ** %obj.class
@@ -76,7 +81,7 @@ define %tool.String * @tool.String.concat(%tool.String * %s1, %tool.String * %s2
   %7 = sext i32 %6 to i64
 
   ; allocate memory for result string
-  %8 = call i8* @malloc(i32 %6) nounwind
+  %8 = call i8* @malloc(i64 %7) nounwind
 
   ; copy first string into result string
   %9 = getelementptr %tool.String * %s1, i64 0, i32 2
@@ -93,6 +98,21 @@ define %tool.String * @tool.String.concat(%tool.String * %s1, %tool.String * %s2
   ; create string object and return it
   %17 = call %tool.String * @tool.String.new(i32 %5, i8 * %8)
   ret %tool.String * %17
+}
+
+define %tool.String * @tool.Int.toString(%tool.Int %num) {
+  %slit = getelementptr [3 x i8]* @.LCIntToString, i64 0, i64 0
+  ; for some reason that escapes me, LLVM requires a more verbose type signature
+  ; when calling varargs functions.
+  %length = call i32 (i8*, i32, i8*, ...)* @snprintf(i8 * null, i32 0, i8 * %slit, %tool.Int %num)
+
+  %allocLength = add i32 %length, 1
+  %allocLength.64 = sext i32 %allocLength to i64
+  %mem = call i8 * @malloc(i64 %allocLength.64)
+
+  call i32 (i8*, i32, i8*, ...)* @snprintf(i8 * %mem, i32 %allocLength, i8 * %slit, %tool.Int %num)
+  %result = call %tool.String * @tool.String.new(i32 %length, i8 * %mem)
+  ret %tool.String * %result
 }
 
 define void @println.String(%tool.String * %str) {
@@ -113,6 +133,10 @@ define i32 @main() {
 
   %str3 = call %tool.String * @tool.String.concat(%tool.String * %str1, %tool.String * %str2)
   call void @println.String(%tool.String * %str3)
+
+  %str4 = call %tool.String * @tool.Int.toString(%tool.Int 42)
+  call void @println.String(%tool.String * %str4)
+
   ret i32 0
 }
 
